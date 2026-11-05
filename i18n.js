@@ -19,6 +19,10 @@ const STRINGS = {
     isOpen: '"{name}" is open now', isOpenText: 'Close this copy of Claude (in the tray too), then delete it.',
     removeAsk: 'Delete "{name}"?', removeText: 'The login and data of this Claude copy will be erased from this computer. The account itself and the shared session history will stay.',
     linkHandler: 'Sends sign-in links to the right copy of Claude',
+    dupTitle: 'A chat is open in two windows',
+    dupItem: '"{title}": {where}',
+    dupText: 'Each window keeps its own copy of the chat and the history will split. Fully quit one of these copies (Claude icon in the tray, then Quit) and open it again. Until then, write in that chat from one window only.',
+    untitled: 'Untitled chat',
   },
   ru: {
     locale: 'ru', subtitle: 'Несколько аккаунтов Claude Desktop, у каждого свой вход',
@@ -39,6 +43,10 @@ const STRINGS = {
     isOpen: '«{name}» сейчас открыт', isOpenText: 'Закройте эту копию Claude (и в трее тоже), потом удалите.',
     removeAsk: 'Удалить «{name}»?', removeText: 'С этого компьютера сотрётся вход и данные этой копии Claude. Аккаунт на сервере и общая история сессий останутся.',
     linkHandler: 'Отдаёт ссылки входа нужной копии Claude',
+    dupTitle: 'Один чат открыт в двух окнах',
+    dupItem: '«{title}»: {where}',
+    dupText: 'Каждое окно держит свою версию чата, и история разойдётся. Полностью выйдите из одной из этих копий (значок Claude в трее → Выход) и откройте её снова. До этого пишите в этот чат только из одного окна.',
+    untitled: 'Чат без названия',
   },
   zh: {
     locale: 'zh-CN', subtitle: '同时运行多个 Claude Desktop 账号，各自独立登录',
@@ -59,6 +67,10 @@ const STRINGS = {
     isOpen: '“{name}”正在运行', isOpenText: '请先关闭此 Claude 副本（包括托盘中的），然后再删除。',
     removeAsk: '删除“{name}”？', removeText: '此电脑上该 Claude 副本的登录信息和数据将被清除。账号本身和共享的会话历史会保留。',
     linkHandler: '将登录链接发送到正确的 Claude 副本',
+    dupTitle: '同一个对话在两个窗口中打开',
+    dupItem: '“{title}”：{where}',
+    dupText: '每个窗口都保留自己的对话版本，历史会分叉。请完全退出其中一个副本（托盘中的 Claude 图标 → 退出），然后重新打开。在此之前，只在一个窗口中继续这个对话。',
+    untitled: '未命名对话',
   },
 };
 

@@ -105,4 +105,43 @@ function isLoginLink(link) {
   return u.host === 'login' && u.pathname === '/google-auth';
 }
 
-module.exports = { mainOrgDir, mergeSessions, hasUnlinkedSessions, unlinkShared, syncSettings, isLoginLink, SHARED_FILES, SHARED_DIRS };
+// Чаты Code, открытые сразу в нескольких копиях. Берём процессы Claude Code, которые запустил
+// Claude Desktop (папка claude-code, --resume=<id чата>), и смотрим, из чьей папки данных каждый.
+// Возвращает [{ chat, owners: ['main' | id аккаунта, ...] }] только для чатов с 2+ владельцами.
+function sharedChats(cmdLines, accountIds) {
+  const owners = new Map();
+  for (const line of cmdLines) {
+    const low = line.toLowerCase();
+    if (!low.includes('\\claude-code\\') || !low.includes('stream-json')) continue;
+    const m = /--resume[= ]"?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/.exec(low);
+    if (!m) continue;
+    let owner = 'main';
+    const p = /\\profiles\\([0-9a-z]+)\\claude-code\\/.exec(low);
+    if (p) { owner = accountIds.find(id => id.toLowerCase() === p[1]); if (!owner) continue; }
+    if (!owners.has(m[1])) owners.set(m[1], new Set());
+    owners.get(m[1]).add(owner);
+  }
+  return [...owners].filter(([, s]) => s.size > 1).map(([chat, s]) => ({ chat, owners: [...s] }));
+}
+
+// Названия чатов по их id из описаний сессий основного Claude (общих для всех копий).
+function chatTitles(mainData, chats) {
+  const want = new Set(chats), titles = {};
+  if (!want.size) return titles;
+  const base = path.join(mainData, 'claude-code-sessions');
+  try {
+    for (const acc of fs.readdirSync(base)) for (const org of fs.readdirSync(path.join(base, acc))) {
+      const dir = path.join(base, acc, org);
+      for (const f of fs.readdirSync(dir)) {
+        if (!/^local_.*\.json$/.test(f)) continue;
+        try {
+          const s = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+          if (want.has(s.cliSessionId) && s.title) titles[s.cliSessionId] = s.title;
+        } catch { }
+      }
+    }
+  } catch { }
+  return titles;
+}
+
+module.exports = { mainOrgDir, mergeSessions, hasUnlinkedSessions, unlinkShared, syncSettings, isLoginLink, sharedChats, chatTitles, SHARED_FILES, SHARED_DIRS };

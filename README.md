@@ -30,6 +30,7 @@ Claude Multi is a free, open-source launcher that opens several accounts of the 
 - **One workspace.** Open the same project folder from different accounts.
 - **Shared settings and MCP.** Each copy takes MCP servers and settings from your main Claude when it starts. You can turn this off.
 - **Shared Claude Code history.** All copies see the same Code sessions. You can turn this off.
+- **Warns when one chat is open in two copies.** The launcher names the chat and the copies, so the history does not split unnoticed.
 - **Desktop shortcuts** for each account.
 - **English, Russian and Simplified Chinese interface.** The launcher follows your Windows language.
 - **Your main Claude stays as it is.** It keeps working as usual, and its data is only read or shared if you leave the sharing options on.
@@ -54,6 +55,7 @@ Claude Multi is a small launcher, and you can check every claim below in the sou
 
 - **No network code.** The launcher makes no connections of its own: no telemetry, no update checks, no server.
 - **Never touches your sign-in.** It does not read, copy or move cookies, tokens or passwords. Each copy of Claude signs in by itself, and its login stays in its own folder.
+- **Reads process information only to show status.** Every few seconds it lists running Claude processes to see which copies are open and whether a chat is open twice, and reads chat titles from the session files. This stays on your computer and is not saved.
 - **Does not change Claude Desktop.** No patching, no injected code, no proxy. It only starts the official app from the Microsoft Store.
 - **No administrator rights.** The registry is written only under your own user (`HKCU`), to receive `claude://` links. [Uninstall](#uninstall) lists every key.
 - **No third-party packages at run time.** Only Electron and Node.js built-in modules.
@@ -163,7 +165,7 @@ Shared history is a directory junction from each copy's session folder to the ma
 
 - **Early release.** So far it has been tested on one machine: Windows 10 with the Microsoft Store build. If a link lands in the wrong window, please [open an issue](https://github.com/Markwork51020/claude-desktop-multi-account/issues).
 - **Windows only**, and only the Microsoft Store version of Claude Desktop for now.
-- **Do not open the same Code session in two copies at once.** They write to the same files.
+- **Do not open the same Code session in two copies at once.** They write to the same file, and each window keeps showing its own version, so one falls behind and the history can split. The launcher warns you when this happens. Switching to another chat does not fix it, because Claude keeps that chat running in the background: fully quit one copy (Claude icon in the tray, then Quit) and open it again.
 - **Connector sign-ins.** OAuth callbacks for MCP connectors started in a copy go to your main Claude.
 - **Google and SSO sign-in** links are routed the same way, but have not been tested.
 - **Cowork.** Other users of `--user-data-dir` setups report that only one profile can run Cowork at a time. This has not been tested here.

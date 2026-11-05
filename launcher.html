@@ -32,6 +32,10 @@
   #warn { display:none; background:#4a2a22; color:#f2c3b3; padding:10px 14px; margin:0 14px; border-radius:10px; font-size:13px; }
   #hint { display:none; background:#2b3540; color:#cfe0ef; padding:10px 14px; margin:4px 14px; border-radius:10px; font-size:12.5px; line-height:1.45; }
   #hint .btn { margin-top:8px; padding:5px 12px; font-size:12.5px; }
+  #dup { display:none; background:#4a3a1c; color:#f3dca8; padding:10px 14px; margin:4px 14px; border-radius:10px; font-size:12.5px; line-height:1.45; }
+  #dup b { display:block; margin-bottom:4px; font-size:13px; }
+  #dupList div { margin:2px 0; word-break:break-word; }
+  #dupText { margin-top:6px; opacity:.85; }
   #modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); }
   #modal.on { display:flex; }
   .box { width:330px; background:#262523; border:1px solid var(--line); border-radius:14px; padding:20px; }
@@ -47,6 +51,7 @@
 <header><h1>Claude Multi</h1><div class="sub" data-t="subtitle"></div></header>
 <div id="warn" data-t="noClaudeBanner"></div>
 <div id="hint"><span id="hintText"></span> <button class="btn" id="hintBtn" data-t="openSettings"></button></div>
+<div id="dup"><b data-t="dupTitle"></b><div id="dupList"></div><div id="dupText" data-t="dupText"></div></div>
 <div id="list"></div>
 <button id="add" data-t="addAccount"></button>
 <footer>
@@ -100,6 +105,13 @@
     else if (st.canRoute && st.linkMode === 'none' && waiting)
       msg = T.hintNone;
     hint.style.display = msg ? 'block' : 'none';
+    const dups = st.dupChats || [];
+    document.getElementById('dup').style.display = dups.length ? 'block' : 'none';
+    document.getElementById('dupList').replaceChildren(...dups.map(d => {
+      const el = document.createElement('div');
+      el.textContent = T.dupItem.replace('{title}', d.title).replace('{where}', d.where.join(' + '));
+      return el;
+    }));
     document.getElementById('hintText').textContent = msg;
     document.getElementById('hintBtn').style.display = st.linkMode === 'other' ? 'inline-block' : 'none';
   }

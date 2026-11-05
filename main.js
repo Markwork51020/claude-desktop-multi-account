@@ -73,10 +73,19 @@ function runningDirs() {
     const out = execFileSync('powershell.exe', ['-NoProfile', '-Command',
       "Get-CimInstance Win32_Process -Filter \"Name='claude.exe'\" | ForEach-Object { $_.CommandLine }"],
       { encoding: 'utf8', windowsHide: true, timeout: 15000 });
-    return out.toLowerCase();
+    return out;
   } catch { return ''; }
 }
-const isRunning = (a, procs) => procs.includes(`\\profiles\\${a.id}`.toLowerCase());
+const isRunning = (a, procs) => procs.toLowerCase().includes(`\\profiles\\${a.id}`.toLowerCase());
+
+// Чаты, открытые в нескольких копиях сразу: их история разойдётся, предупреждаем.
+function dupChats(procs) {
+  const found = lib.sharedChats(procs.split(/\r?\n/), state.accounts.map(a => a.id));
+  if (!found.length) return [];
+  const titles = lib.chatTitles(MAIN_DATA, found.map(d => d.chat));
+  const nameOf = o => o === 'main' ? T('main') : (state.accounts.find(a => a.id === o) || {}).name || o;
+  return found.map(d => ({ title: titles[d.chat] || T('untitled'), where: d.owners.map(nameOf) }));
+}
 
 function noClaude() {
   dialog.showErrorBox(T('noClaudeTitle'), T('noClaudeText'));
@@ -176,7 +185,7 @@ function sendState() {
   win.webContents.send('state', {
     accounts: state.accounts.map(a => ({ ...a, running: isRunning(a, procs), waiting: a === waitingAccount() })),
     shareSettings: state.shareSettings, shareSessions: state.shareSessions,
-    hasClaude: hasClaude(), linkMode, canRoute: app.isPackaged
+    hasClaude: hasClaude(), linkMode, canRoute: app.isPackaged, dupChats: dupChats(procs)
   });
 }
 
