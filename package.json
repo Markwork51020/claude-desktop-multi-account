@@ -2,7 +2,7 @@
   "name": "claude-multi",
   "productName": "Claude Multi",
   "version": "1.1.0",
-  "description": "Run several Claude Desktop accounts side by side on Windows: each copy has its own login, all share one project, MCP settings and Claude Code history",
+  "description": "Run multiple Claude Desktop accounts at the same time on Windows: separate logins, email sign-in links routed to the right window, shared project, MCP and Claude Code history",
   "keywords": [
     "claude",
     "claude-desktop",
@@ -10,11 +10,20 @@
     "anthropic",
     "multi-account",
     "multiple-accounts",
+    "multi-instance",
     "account-switcher",
     "windows",
     "electron"
   ],
   "license": "MIT",
+  "homepage": "https://github.com/Markwork51020/claude-desktop-multi-account#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Markwork51020/claude-desktop-multi-account.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Markwork51020/claude-desktop-multi-account/issues"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
