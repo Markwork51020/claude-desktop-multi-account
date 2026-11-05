@@ -1,6 +1,6 @@
 # Claude Multi: run multiple Claude Desktop accounts at the same time on Windows
 
-**English** | [Русский](README.ru.md)
+**English** | [Русский: мультиаккаунт Claude Desktop](README.ru.md) | [简体中文：Claude Desktop 多开、多账号](README.zh-CN.md)
 
 Claude Multi is a free, open-source launcher that opens several accounts of the **real Claude Desktop app** side by side on Windows, with no logging out and no web wrapper. Each window is the full app with its own login, including Claude Code and MCP, and email sign-in links open in the window that asked for them, not in your main Claude.
 
@@ -29,6 +29,7 @@ Claude Multi is a free, open-source launcher that opens several accounts of the 
 - **Shared settings and MCP.** Each copy takes MCP servers and settings from your main Claude when it starts. You can turn this off.
 - **Shared Claude Code history.** All copies see the same Code sessions. You can turn this off.
 - **Desktop shortcuts** for each account.
+- **English, Russian and Simplified Chinese interface.** The launcher follows your Windows language.
 - **Your main Claude stays as it is.** It keeps working as usual, and its data is only read or shared if you leave the sharing options on.
 
 ## Install
@@ -95,9 +96,21 @@ The link uses the `claude://` protocol, and Windows hands that to your main Clau
 
 Yes. Each copy is the full desktop app, so its Code tab runs under that copy's account. All copies can work in the same folder.
 
+### Is this a sandbox?
+
+No. Each copy is the same app using a different data folder. Logins and app data are separate, but every copy runs with your Windows user rights and can reach the same files. Do not treat it as a security boundary.
+
 ### Does it work with the Microsoft Store version?
 
 Yes, and for now that is the only version it supports. Data is kept in `%USERPROFILE%\.claude-multi` so that it stays outside the Store app's virtualized AppData folder.
+
+### What language is the interface in?
+
+The launcher follows your Windows language: English, Russian or Simplified Chinese, and English for anything else. Claude Desktop's own language is not affected.
+
+### Does it give access to Claude in unsupported regions?
+
+No. It provides no accounts, network connection or access to Claude, and it does not get around regional restrictions. It only starts the official app you already installed. Check Anthropic's [supported countries and regions](https://www.anthropic.com/supported-countries).
 
 ### Does it modify Claude Desktop or send my data anywhere?
 

@@ -1,7 +1,7 @@
 {
   "name": "claude-multi",
   "productName": "Claude Multi",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Run multiple Claude Desktop accounts at the same time on Windows: separate logins, email sign-in links routed to the right window, shared project, MCP and Claude Code history",
   "keywords": [
     "claude",
@@ -11,6 +11,9 @@
     "multi-account",
     "multiple-accounts",
     "multi-instance",
+    "мультиаккаунт",
+    "多开",
+    "多账号",
     "account-switcher",
     "windows",
     "electron"

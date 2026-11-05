@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html>
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
@@ -7,7 +7,7 @@
 <style>
   :root { --bg:#1f1e1d; --card:#262523; --fg:#ecebe6; --mut:#9b9890; --line:#34332f; --acc:#d97757; --ok:#7fb069; }
   * { box-sizing:border-box; }
-  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:14px "Segoe UI",system-ui,sans-serif; user-select:none; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:14px "Segoe UI","Microsoft YaHei",system-ui,sans-serif; user-select:none; }
   body { display:flex; flex-direction:column; }
   header { padding:18px 18px 8px; }
   h1 { margin:0; font-size:19px; font-weight:600; }
@@ -44,40 +44,43 @@
 </style>
 </head>
 <body>
-<header><h1>Claude Multi</h1><div class="sub">Несколько аккаунтов Claude Desktop, у каждого свой вход</div></header>
-<div id="warn">Claude Desktop не найден. Установите его, потом откройте Claude Multi снова.</div>
-<div id="hint"><span id="hintText"></span> <button class="btn" id="hintBtn">Открыть настройки</button></div>
+<header><h1>Claude Multi</h1><div class="sub" data-t="subtitle"></div></header>
+<div id="warn" data-t="noClaudeBanner"></div>
+<div id="hint"><span id="hintText"></span> <button class="btn" id="hintBtn" data-t="openSettings"></button></div>
 <div id="list"></div>
-<button id="add">+ Добавить аккаунт</button>
+<button id="add" data-t="addAccount"></button>
 <footer>
-  <label><input type="checkbox" id="shareSettings"><span>Общие MCP и настройки<small>При запуске копии берутся из основного Claude</small></span></label>
-  <label><input type="checkbox" id="shareSessions"><span>Общая история сессий Code<small>Все копии видят одни сессии. Не открывайте одну сессию в двух копиях одновременно</small></span></label>
+  <label><input type="checkbox" id="shareSettings"><span><span data-t="shareSettings"></span><small data-t="shareSettingsHint"></small></span></label>
+  <label><input type="checkbox" id="shareSessions"><span><span data-t="shareSessions"></span><small data-t="shareSessionsHint"></small></span></label>
 </footer>
 <div id="modal"><div class="box">
   <h3 id="mt"></h3><input id="mi" maxlength="40"><p id="mp"></p>
-  <div class="act"><button class="btn cancel" id="mc">Отмена</button><button class="btn" id="mo">Готово</button></div>
+  <div class="act"><button class="btn cancel" id="mc" data-t="cancel"></button><button class="btn" id="mo" data-t="done"></button></div>
 </div></div>
 <script>
   const list = document.getElementById('list'), modal = document.getElementById('modal'), mi = document.getElementById('mi');
   let st = { accounts: [] }, onOk = null;
+  const T = api.strings;
+  document.documentElement.lang = T.locale;
+  document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T[el.dataset.t]; });
 
   function row(a, main) {
     const r = document.createElement('div'); r.className = 'row';
     const av = document.createElement('div'); av.className = 'av'; av.style.background = main ? '#d97757' : a.color;
     av.textContent = main ? '★' : (a.name.trim()[0] || '?').toUpperCase();
     const nm = document.createElement('div'); nm.className = 'nm';
-    const b = document.createElement('b'); b.textContent = main ? 'Основной' : a.name;
+    const b = document.createElement('b'); b.textContent = main ? T.main : a.name;
     const s = document.createElement('span');
-    if (main) s.textContent = 'Обычный Claude, как из меню Пуск';
-    else if (a.waiting) { s.textContent = '● ждёт входа: откройте ссылку из письма'; s.className = 'on'; }
-    else if (a.running) { s.textContent = '● открыт'; s.className = 'on'; }
-    else s.textContent = a.lastOpened ? 'открывался ' + new Date(a.lastOpened).toLocaleDateString('ru') : 'ещё не открывался';
+    if (main) s.textContent = T.mainHint;
+    else if (a.waiting) { s.textContent = T.waiting; s.className = 'on'; }
+    else if (a.running) { s.textContent = T.running; s.className = 'on'; }
+    else s.textContent = a.lastOpened ? T.lastOpened.replace('{date}', new Date(a.lastOpened).toLocaleDateString(T.locale)) : T.neverOpened;
     nm.append(b, s);
-    const go = document.createElement('button'); go.className = 'btn'; go.textContent = (!main && a.running) ? 'Показать' : 'Открыть';
+    const go = document.createElement('button'); go.className = 'btn'; go.textContent = (!main && a.running) ? T.show : T.open;
     go.onclick = e => { e.stopPropagation(); api.send('open', main ? 'main' : a.id); };
     r.append(av, nm, go);
     if (!main) {
-      const m = document.createElement('button'); m.className = 'btn more'; m.textContent = '⋯'; m.title = 'Ещё';
+      const m = document.createElement('button'); m.className = 'btn more'; m.textContent = '⋯'; m.title = T.more;
       m.onclick = e => { e.stopPropagation(); api.send('menu', a.id); };
       r.append(m);
       r.oncontextmenu = e => { e.preventDefault(); api.send('menu', a.id); };
@@ -93,9 +96,9 @@
     const hint = document.getElementById('hint'), waiting = st.accounts.some(a => a.waiting);
     let msg = '';
     if (st.canRoute && st.linkMode === 'other' && st.accounts.length)
-      msg = 'Ссылки входа из письма сейчас открывает основной Claude. Чтобы вход попадал в нужную копию, в Windows выберите Claude Multi для протокола CLAUDE: Приложения по умолчанию → Выбор стандартных приложений для протоколов.';
+      msg = T.hintOther;
     else if (st.canRoute && st.linkMode === 'none' && waiting)
-      msg = 'Когда откроете ссылку из письма, Windows спросит, чем её открыть. Выберите Claude Multi и отметьте «Всегда использовать это приложение».';
+      msg = T.hintNone;
     hint.style.display = msg ? 'block' : 'none';
     document.getElementById('hintText').textContent = msg;
     document.getElementById('hintBtn').style.display = st.linkMode === 'other' ? 'inline-block' : 'none';
@@ -108,13 +111,13 @@
   document.getElementById('mo').onclick = () => close(true);
   document.getElementById('mc').onclick = () => close(false);
   mi.onkeydown = e => { if (e.key === 'Enter') close(true); if (e.key === 'Escape') close(false); };
-  document.getElementById('add').onclick = () => ask('Новый аккаунт', 'Аккаунт ' + (st.accounts.length + 2),
-    'Откроется отдельная копия Claude с пустым входом. Войдите в нужный аккаунт: ссылка из письма откроется именно в этой копии. Если Windows спросит, чем открыть ссылку, выберите Claude Multi.', v => api.send('add', v));
+  document.getElementById('add').onclick = () => ask(T.newAccount, T.accountName.replace('{n}', st.accounts.length + 2),
+    T.newAccountHint, v => api.send('add', v));
   document.getElementById('hintBtn').onclick = () => api.send('link-settings');
   document.getElementById('shareSettings').onchange = e => api.send('toggle', 'shareSettings', e.target.checked);
   document.getElementById('shareSessions').onchange = e => api.send('toggle', 'shareSessions', e.target.checked);
   api.onState(s => { st = s; render(); });
-  api.onAskRename(id => { const a = st.accounts.find(x => x.id === id); if (a) ask('Переименовать', a.name, '', v => api.send('rename', id, v)); });
+  api.onAskRename(id => { const a = st.accounts.find(x => x.id === id); if (a) ask(T.rename, a.name, '', v => api.send('rename', id, v)); });
   setInterval(() => api.send('refresh'), 5000);
 </script>
 </body>

@@ -6,6 +6,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { spawn, execFile, execFileSync } = require('child_process');
 const lib = require('./lib');
+const i18n = require('./i18n');
 
 const LOCAL = process.env.LOCALAPPDATA;
 const MAIN_DATA = path.join(process.env.APPDATA, 'Claude');           // данные основного Claude
@@ -25,6 +26,7 @@ const PROGID = 'ClaudeMulti.Link';
 const hasClaude = () => { try { fs.lstatSync(ALIAS); return true; } catch { return false; } };
 
 let win = null;
+const T = (key, vars) => i18n.format(i18n.pick(app.getLocale())[key], vars);
 let state = { accounts: [], shareSettings: true, shareSessions: true };
 let linkMode = 'none';             // кто открывает ссылки claude://: ours | other | none
 
@@ -77,7 +79,7 @@ function runningDirs() {
 const isRunning = (a, procs) => procs.includes(`\\profiles\\${a.id}`.toLowerCase());
 
 function noClaude() {
-  dialog.showErrorBox('Claude не найден', 'Не найден claude-desktop.exe. Установите Claude Desktop из Microsoft Store или с claude.ai/download.');
+  dialog.showErrorBox(T('noClaudeTitle'), T('noClaudeText'));
 }
 const runClaude = args => spawn(ALIAS, args, { detached: true, stdio: 'ignore' }).unref();
 
@@ -134,7 +136,7 @@ async function registerLinks() {
     await reg(['add', cls + '\\DefaultIcon', '/ve', '/d', `"${process.execPath}",0`, '/f']);
     await reg(['add', cls + '\\shell\\open\\command', '/ve', '/d', cmd, '/f']);
     await reg(['add', cap, '/v', 'ApplicationName', '/d', 'Claude Multi', '/f']);
-    await reg(['add', cap, '/v', 'ApplicationDescription', '/d', 'Отдаёт ссылки входа нужной копии Claude', '/f']);
+    await reg(['add', cap, '/v', 'ApplicationDescription', '/d', T('linkHandler'), '/f']);
     await reg(['add', cap + '\\URLAssociations', '/v', 'claude', '/d', PROGID, '/f']);
     await reg(['add', 'HKCU\\Software\\RegisteredApplications', '/v', 'Claude Multi', '/d', 'Software\\ClaudeMulti\\Capabilities', '/f']);
   }
@@ -191,10 +193,11 @@ function createWindow() {
   win.on('closed', () => { win = null; });
 }
 
+ipcMain.on('strings', e => { e.returnValue = i18n.pick(app.getLocale()); });
 ipcMain.on('refresh', () => { checkLinkMode(); sendState(); });
 ipcMain.on('open', (e, id) => launch(id));
 ipcMain.on('add', (e, name) => {
-  const a = { id: crypto.randomBytes(5).toString('hex'), name: (name || '').trim() || 'Аккаунт ' + (state.accounts.length + 2),
+  const a = { id: crypto.randomBytes(5).toString('hex'), name: (name || '').trim() || T('accountName', { n: state.accounts.length + 2 }),
     color: COLORS[state.accounts.length % COLORS.length], needsLogin: true };
   state.accounts.push(a); save(); launch(a.id);
 });
@@ -213,17 +216,17 @@ ipcMain.on('shortcut', (e, id) => {
   const lnk = path.join(app.getPath('desktop'), `Claude — ${a.name.replace(/[\\/:*?"<>|]/g, '')}.lnk`);
   const ok = shell.writeShortcutLink(lnk, { target: process.execPath, args: app.isPackaged ? `--open=${a.id}` : `"${app.getAppPath()}" --open=${a.id}`,
     icon: process.execPath, iconIndex: 0, description: 'Claude: ' + a.name });
-  dialog.showMessageBox(win, { message: ok ? 'Ярлык создан на рабочем столе' : 'Не удалось создать ярлык', detail: ok ? path.basename(lnk) : '' });
+  dialog.showMessageBox(win, { message: T(ok ? 'shortcutOk' : 'shortcutFail'), detail: ok ? path.basename(lnk) : '' });
 });
 ipcMain.on('remove', async (e, id) => {
   const a = state.accounts.find(x => x.id === id); if (!a) return;
   if (isRunning(a, runningDirs())) {
-    dialog.showMessageBox(win, { type: 'info', message: `«${a.name}» сейчас открыт`, detail: 'Закройте эту копию Claude (и в трее тоже), потом удалите.' });
+    dialog.showMessageBox(win, { type: 'info', message: T('isOpen', { name: a.name }), detail: T('isOpenText') });
     return;
   }
-  const r = await dialog.showMessageBox(win, { type: 'warning', buttons: ['Удалить', 'Отмена'], defaultId: 1, cancelId: 1,
-    message: `Удалить «${a.name}»?`,
-    detail: 'С этого компьютера сотрётся вход и данные этой копии Claude. Аккаунт на сервере и общая история сессий останутся.' });
+  const r = await dialog.showMessageBox(win, { type: 'warning', buttons: [T('remove'), T('cancel')], defaultId: 1, cancelId: 1,
+    message: T('removeAsk', { name: a.name }),
+    detail: T('removeText') });
   if (r.response !== 0) return;
   const dir = a.legacy || dirOf(a);
   lib.unlinkShared(dir);   // сначала снимаем ссылки на общие папки
@@ -232,12 +235,12 @@ ipcMain.on('remove', async (e, id) => {
 });
 ipcMain.on('menu', (e, id) => {
   Menu.buildFromTemplate([
-    { label: 'Переименовать', click: () => win.webContents.send('ask-rename', id) },
-    { label: 'Войти заново (следующий вход — сюда)', click: () => ipcMain.emit('relogin', {}, id) },
-    { label: 'Ярлык на рабочий стол', click: () => ipcMain.emit('shortcut', {}, id) },
-    { label: 'Открыть папку данных', click: () => { const a = state.accounts.find(x => x.id === id); if (a) shell.openPath(a.legacy || dirOf(a)); } },
+    { label: T('rename'), click: () => win.webContents.send('ask-rename', id) },
+    { label: T('relogin'), click: () => ipcMain.emit('relogin', {}, id) },
+    { label: T('shortcut'), click: () => ipcMain.emit('shortcut', {}, id) },
+    { label: T('openData'), click: () => { const a = state.accounts.find(x => x.id === id); if (a) shell.openPath(a.legacy || dirOf(a)); } },
     { type: 'separator' },
-    { label: 'Удалить', click: () => ipcMain.emit('remove', {}, id) },
+    { label: T('remove'), click: () => ipcMain.emit('remove', {}, id) },
   ]).popup({ window: win });
 });
 

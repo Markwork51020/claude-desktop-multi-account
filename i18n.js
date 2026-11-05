@@ -1,0 +1,71 @@
+// Тексты интерфейса. Язык берётся из системы; если перевода нет, показываем английский.
+const STRINGS = {
+  en: {
+    locale: 'en', subtitle: 'Several Claude Desktop accounts, each with its own login',
+    noClaudeBanner: 'Claude Desktop was not found. Install it, then open Claude Multi again.',
+    openSettings: 'Open settings', addAccount: '+ Add account',
+    shareSettings: 'Shared MCP and settings', shareSettingsHint: 'Copies take them from your main Claude when they start',
+    shareSessions: 'Shared Code session history', shareSessionsHint: 'All copies see the same sessions. Do not open one session in two copies at once',
+    cancel: 'Cancel', done: 'Done', main: 'Main', mainHint: 'Your regular Claude, as from the Start menu',
+    waiting: '● waiting for login: open the link from the email', running: '● open',
+    lastOpened: 'last opened {date}', neverOpened: 'not opened yet', show: 'Show', open: 'Open', more: 'More',
+    hintOther: 'Your main Claude currently opens email sign-in links. To send them to the right copy, choose Claude Multi for the CLAUDE protocol in Windows: Settings → Default apps → Choose default apps by protocol (link type).',
+    hintNone: 'When you open the link from the email, Windows will ask which app to use. Choose Claude Multi and tick "Always use this app".',
+    newAccount: 'New account', accountName: 'Account {n}',
+    newAccountHint: 'A separate Claude copy opens with an empty login. Sign in to the account you want: the email link will open in this copy. If Windows asks which app to use, choose Claude Multi.',
+    rename: 'Rename', relogin: 'Sign in again (next login goes here)', shortcut: 'Desktop shortcut', openData: 'Open data folder', remove: 'Delete',
+    noClaudeTitle: 'Claude not found', noClaudeText: 'claude-desktop.exe was not found. Install Claude Desktop from the Microsoft Store or claude.ai/download.',
+    shortcutOk: 'Shortcut created on the desktop', shortcutFail: 'Could not create the shortcut',
+    isOpen: '"{name}" is open now', isOpenText: 'Close this copy of Claude (in the tray too), then delete it.',
+    removeAsk: 'Delete "{name}"?', removeText: 'The login and data of this Claude copy will be erased from this computer. The account itself and the shared session history will stay.',
+    linkHandler: 'Sends sign-in links to the right copy of Claude',
+  },
+  ru: {
+    locale: 'ru', subtitle: 'Несколько аккаунтов Claude Desktop, у каждого свой вход',
+    noClaudeBanner: 'Claude Desktop не найден. Установите его, потом откройте Claude Multi снова.',
+    openSettings: 'Открыть настройки', addAccount: '+ Добавить аккаунт',
+    shareSettings: 'Общие MCP и настройки', shareSettingsHint: 'При запуске копии берутся из основного Claude',
+    shareSessions: 'Общая история сессий Code', shareSessionsHint: 'Все копии видят одни сессии. Не открывайте одну сессию в двух копиях одновременно',
+    cancel: 'Отмена', done: 'Готово', main: 'Основной', mainHint: 'Обычный Claude, как из меню Пуск',
+    waiting: '● ждёт входа: откройте ссылку из письма', running: '● открыт',
+    lastOpened: 'открывался {date}', neverOpened: 'ещё не открывался', show: 'Показать', open: 'Открыть', more: 'Ещё',
+    hintOther: 'Ссылки входа из письма сейчас открывает основной Claude. Чтобы вход попадал в нужную копию, в Windows выберите Claude Multi для протокола CLAUDE: Приложения по умолчанию → Выбор стандартных приложений для протоколов.',
+    hintNone: 'Когда откроете ссылку из письма, Windows спросит, чем её открыть. Выберите Claude Multi и отметьте «Всегда использовать это приложение».',
+    newAccount: 'Новый аккаунт', accountName: 'Аккаунт {n}',
+    newAccountHint: 'Откроется отдельная копия Claude с пустым входом. Войдите в нужный аккаунт: ссылка из письма откроется именно в этой копии. Если Windows спросит, чем открыть ссылку, выберите Claude Multi.',
+    rename: 'Переименовать', relogin: 'Войти заново (следующий вход — сюда)', shortcut: 'Ярлык на рабочий стол', openData: 'Открыть папку данных', remove: 'Удалить',
+    noClaudeTitle: 'Claude не найден', noClaudeText: 'Не найден claude-desktop.exe. Установите Claude Desktop из Microsoft Store или с claude.ai/download.',
+    shortcutOk: 'Ярлык создан на рабочем столе', shortcutFail: 'Не удалось создать ярлык',
+    isOpen: '«{name}» сейчас открыт', isOpenText: 'Закройте эту копию Claude (и в трее тоже), потом удалите.',
+    removeAsk: 'Удалить «{name}»?', removeText: 'С этого компьютера сотрётся вход и данные этой копии Claude. Аккаунт на сервере и общая история сессий останутся.',
+    linkHandler: 'Отдаёт ссылки входа нужной копии Claude',
+  },
+  zh: {
+    locale: 'zh-CN', subtitle: '同时运行多个 Claude Desktop 账号，各自独立登录',
+    noClaudeBanner: '未找到 Claude Desktop。请先安装，然后重新打开 Claude Multi。',
+    openSettings: '打开设置', addAccount: '+ 添加账号',
+    shareSettings: '共享 MCP 和设置', shareSettingsHint: '副本启动时从主 Claude 获取',
+    shareSessions: '共享 Code 会话历史', shareSessionsHint: '所有副本看到相同的会话。请勿在两个副本中同时打开同一会话',
+    cancel: '取消', done: '完成', main: '主账号', mainHint: '普通的 Claude，与从开始菜单打开的相同',
+    waiting: '● 等待登录：请打开邮件中的链接', running: '● 已打开',
+    lastOpened: '上次打开：{date}', neverOpened: '尚未打开', show: '显示', open: '打开', more: '更多',
+    hintOther: '邮件登录链接目前由主 Claude 打开。要让链接进入正确的副本，请在 Windows 中为 CLAUDE 协议选择 Claude Multi：设置 → 默认应用 → 按协议指定默认应用。',
+    hintNone: '打开邮件中的链接时，Windows 会询问用哪个应用打开。请选择 Claude Multi 并勾选“始终使用此应用”。',
+    newAccount: '新账号', accountName: '账号 {n}',
+    newAccountHint: '将打开一个未登录的独立 Claude 副本。请登录所需账号：邮件中的链接会在此副本中打开。如果 Windows 询问用哪个应用打开，请选择 Claude Multi。',
+    rename: '重命名', relogin: '重新登录（下次登录进入此副本）', shortcut: '创建桌面快捷方式', openData: '打开数据文件夹', remove: '删除',
+    noClaudeTitle: '未找到 Claude', noClaudeText: '未找到 claude-desktop.exe。请从 Microsoft Store 或 claude.ai/download 安装 Claude Desktop。',
+    shortcutOk: '已在桌面创建快捷方式', shortcutFail: '无法创建快捷方式',
+    isOpen: '“{name}”正在运行', isOpenText: '请先关闭此 Claude 副本（包括托盘中的），然后再删除。',
+    removeAsk: '删除“{name}”？', removeText: '此电脑上该 Claude 副本的登录信息和数据将被清除。账号本身和共享的会话历史会保留。',
+    linkHandler: '将登录链接发送到正确的 Claude 副本',
+  },
+};
+
+function pick(locale) {
+  const lang = String(locale || '').toLowerCase().split(/[-_]/)[0];
+  return STRINGS[lang] || STRINGS.en;
+}
+const format = (text, vars = {}) => text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+
+module.exports = { STRINGS, pick, format };
