@@ -4,6 +4,8 @@
 
 Claude Multi is a free, open-source launcher that opens several accounts of the **real Claude Desktop app** side by side on Windows, with no logging out and no web wrapper. Each window is the full app with its own login, including Claude Code and MCP, and email sign-in links open in the window that asked for them, not in your main Claude.
 
+<p align="center"><img src="docs/screenshot-en.png" alt="Claude Multi window: main Claude, a Work account that is open, a Personal account waiting for its email sign-in link, and a Client account" width="380"></p>
+
 > Unofficial community project. Not affiliated with, endorsed by, or supported by Anthropic. "Claude" is a trademark of Anthropic. You are responsible for following the [terms](https://www.anthropic.com/legal/consumer-terms) that apply to your accounts.
 
 ## Is this the right tool?
@@ -31,6 +33,31 @@ Claude Multi is a free, open-source launcher that opens several accounts of the 
 - **Desktop shortcuts** for each account.
 - **English, Russian and Simplified Chinese interface.** The launcher follows your Windows language.
 - **Your main Claude stays as it is.** It keeps working as usual, and its data is only read or shared if you leave the sharing options on.
+
+## Compared with similar tools
+
+Other free tools solve parts of the same problem on Windows. This table only repeats what each project's README said on 5 November 2026; check the links for the current state, and [open an issue](https://github.com/Markwork51020/claude-desktop-multi-account/issues) if something here is wrong.
+
+| | Accounts open at the same time | Email or browser sign-in reaches the right window | Shared MCP, settings and Code history | Interface |
+| --- | --- | --- | --- | --- |
+| **Claude Multi** | Yes | Yes, on by default | Yes, each can be turned off | Window app |
+| [Claude Profile Switcher](https://github.com/PriyanshuGeTRekT/Claude-Code-Desktop-Switcher) | Yes | Yes, optional | Moves Code chats between accounts | Window app (PowerShell) |
+| [claude-desktop-multi](https://github.com/sypnose-cloud/claude-desktop-multi) | Yes | No: sign in to each new copy with the others closed | No, each copy is separate | Script and shortcuts |
+| [Claude / Codex Multi-Instance](https://github.com/Zoltak-Dev/ai-multi-instance) | Yes, Codex too | Yes, through a temporary swap of your main Claude data | No, profiles are separate | Terminal menu (Python) |
+| [Claude Account Switcher](https://github.com/SnlperStripes/claude-account-switcher) | No: switches one Claude between accounts | Not needed: keeps a saved sign-in per account | Carries Code chats across | Tray app, Windows and macOS |
+
+**In short:** Claude Multi suits you if you want several accounts open at once that work on the same projects with the same MCP servers. If you want accounts kept fully apart, one of the other tools may fit better.
+
+## Security and privacy
+
+Claude Multi is a small launcher, and you can check every claim below in the source: [main.js](https://github.com/Markwork51020/claude-desktop-multi-account/blob/main/main.js), [lib.js](https://github.com/Markwork51020/claude-desktop-multi-account/blob/main/lib.js), [preload.js](https://github.com/Markwork51020/claude-desktop-multi-account/blob/main/preload.js).
+
+- **No network code.** The launcher makes no connections of its own: no telemetry, no update checks, no server.
+- **Never touches your sign-in.** It does not read, copy or move cookies, tokens or passwords. Each copy of Claude signs in by itself, and its login stays in its own folder.
+- **Does not change Claude Desktop.** No patching, no injected code, no proxy. It only starts the official app from the Microsoft Store.
+- **No administrator rights.** The registry is written only under your own user (`HKCU`), to receive `claude://` links. [Uninstall](#uninstall) lists every key.
+- **No third-party packages at run time.** Only Electron and Node.js built-in modules.
+- **Not a sandbox.** Copies run with your Windows user rights, like Claude itself. With sharing on, your MCP config, including any secrets in it, is copied into each profile on your computer.
 
 ## Install
 

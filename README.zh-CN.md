@@ -4,6 +4,8 @@
 
 Claude Multi 是一款免费开源的启动器，可以在 Windows 上同时打开多个**真正的 Claude Desktop 应用**（多开、双开、多账号），无需退出登录，也不是网页套壳。每个窗口都是完整的应用，拥有独立的登录状态，包括 Claude Code 和 MCP。邮件中的登录链接会在发起登录的窗口中打开，而不是进入主 Claude。
 
+<p align="center"><img src="docs/screenshot-zh-CN.png" alt="Claude Multi 窗口：主账号、已打开的“工作”账号、正在等待邮件登录链接的“个人”账号，以及“客户”账号" width="380"></p>
+
 > 非官方社区项目，与 Anthropic 无关，也未获其认可或支持。“Claude”是 Anthropic 的商标。您需要自行遵守账号适用的[条款](https://www.anthropic.com/legal/consumer-terms)。
 
 > **地区说明：** Claude Multi 不提供 Claude 的访问权限，也不会改变服务可用的地区。它只是启动您电脑上已安装的官方应用。Anthropic 的[支持地区列表](https://www.anthropic.com/supported-countries)目前未包含中国大陆和香港，请先查看该列表。
@@ -33,6 +35,31 @@ Claude Multi 是一款免费开源的启动器，可以在 Windows 上同时打�
 - **桌面快捷方式。** 可以为每个账号创建。
 - **中文界面。** 启动器跟随 Windows 语言，支持简体中文、英语和俄语。
 - **主 Claude 保持原样。** 它照常工作，只有开启共享选项时才会读取或共享它的数据。
+
+## 与类似工具的区别
+
+Windows 上还有其他免费工具解决了这个问题的一部分。下表只列出各项目 README 在 2026 年 11 月 5 日的说明，最新情况请查看链接。如有错误，欢迎[提交 issue](https://github.com/Markwork51020/claude-desktop-multi-account/issues)。
+
+| | 同时打开多个账号 | 邮件或浏览器登录进入正确的窗口 | 共享 MCP、设置和 Code 历史 | 界面 |
+| --- | --- | --- | --- | --- |
+| **Claude Multi** | 是 | 是，默认开启 | 是，每项都可关闭 | 窗口应用 |
+| [Claude Profile Switcher](https://github.com/PriyanshuGeTRekT/Claude-Code-Desktop-Switcher) | 是 | 是，可选 | 可在账号之间转移 Code 对话 | 窗口应用（PowerShell） |
+| [claude-desktop-multi](https://github.com/sypnose-cloud/claude-desktop-multi) | 是 | 否：登录新副本时需关闭其他窗口 | 否，各副本独立 | 脚本和快捷方式 |
+| [Claude / Codex Multi-Instance](https://github.com/Zoltak-Dev/ai-multi-instance) | 是，也支持 Codex | 是，通过临时替换主 Claude 的数据 | 否，各配置文件独立 | 终端菜单（Python） |
+| [Claude Account Switcher](https://github.com/SnlperStripes/claude-account-switcher) | 否：在账号之间切换同一个 Claude | 不需要：为每个账号保存登录状态 | 可带上 Code 对话 | 托盘应用，Windows 和 macOS |
+
+**简而言之：** 如果您想同时打开多个账号，并让它们在同一个项目中使用相同的 MCP 服务器，Claude Multi 更合适。如果您希望各账号完全隔离，其他工具可能更适合。
+
+## 安全与隐私
+
+Claude Multi 是一个小型启动器，下面每一条都可以在源码中核实：[main.js](https://github.com/Markwork51020/claude-desktop-multi-account/blob/main/main.js)、[lib.js](https://github.com/Markwork51020/claude-desktop-multi-account/blob/main/lib.js)、[preload.js](https://github.com/Markwork51020/claude-desktop-multi-account/blob/main/preload.js)。
+
+- **没有网络代码。** 启动器自身不发起任何连接：没有遥测、没有更新检查、没有服务器。
+- **不碰您的登录信息。** 它不会读取、复制或转移 Cookie、令牌或密码。每个 Claude 副本自行登录，登录信息保存在各自的文件夹中。
+- **不修改 Claude Desktop。** 不打补丁、不注入代码、不使用代理。它只启动 Microsoft Store 中的官方应用。
+- **不需要管理员权限。** 只在当前用户的注册表（`HKCU`）中写入，用于接收 `claude://` 链接。所有键都列在[卸载](#卸载)中。
+- **运行时没有第三方包。** 只使用 Electron 和 Node.js 内置模块。
+- **这不是沙盒。** 各副本与 Claude 本身一样，以您的 Windows 用户权限运行。开启共享设置后，MCP 配置（包括其中的密钥）会被复制到您电脑上的每个配置文件中。
 
 ## 安装
 
