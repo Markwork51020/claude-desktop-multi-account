@@ -1,0 +1,27 @@
+{
+  "name": "claude-multi",
+  "productName": "Claude Multi",
+  "version": "1.1.0",
+  "description": "Run several Claude Desktop accounts side by side on Windows: each copy has its own login, all share one project, MCP settings and Claude Code history",
+  "keywords": [
+    "claude",
+    "claude-desktop",
+    "claude-code",
+    "anthropic",
+    "multi-account",
+    "multiple-accounts",
+    "account-switcher",
+    "windows",
+    "electron"
+  ],
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . ClaudeMulti --platform=win32 --arch=x64 --out=dist --overwrite --asar --icon=icon.ico --ignore=^/dist"
+  },
+  "devDependencies": {
+    "@electron/packager": "18.3.6",
+    "electron": "33.2.1"
+  }
+}

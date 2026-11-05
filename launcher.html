@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Claude Multi</title>
+<style>
+  :root { --bg:#1f1e1d; --card:#262523; --fg:#ecebe6; --mut:#9b9890; --line:#34332f; --acc:#d97757; --ok:#7fb069; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:14px "Segoe UI",system-ui,sans-serif; user-select:none; }
+  body { display:flex; flex-direction:column; }
+  header { padding:18px 18px 8px; }
+  h1 { margin:0; font-size:19px; font-weight:600; }
+  .sub { color:var(--mut); font-size:12.5px; margin-top:4px; }
+  #list { flex:1; overflow-y:auto; padding:8px 14px; display:flex; flex-direction:column; gap:8px; }
+  .row { display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; cursor:pointer; }
+  .row:hover { border-color:#4a4844; }
+  .av { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:16px; flex:none; }
+  .nm { flex:1; min-width:0; }
+  .nm b { display:block; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nm span { color:var(--mut); font-size:12px; }
+  .nm span.on { color:var(--ok); }
+  .btn { border:0; border-radius:9px; padding:7px 14px; font:inherit; cursor:pointer; background:var(--acc); color:#fff; }
+  .more { background:none; color:var(--mut); font-size:18px; padding:4px 8px; }
+  .more:hover { color:var(--fg); }
+  #add { margin:6px 14px 0; padding:11px; border-radius:12px; border:1.5px dashed #4a4844; background:none; color:var(--mut); font:inherit; cursor:pointer; }
+  #add:hover { color:var(--fg); border-color:var(--mut); }
+  footer { padding:12px 18px 16px; border-top:1px solid var(--line); margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+  label { display:flex; gap:9px; align-items:flex-start; font-size:13px; cursor:pointer; }
+  label small { display:block; color:var(--mut); font-size:11.5px; }
+  input[type=checkbox] { accent-color:var(--acc); margin-top:3px; }
+  #warn { display:none; background:#4a2a22; color:#f2c3b3; padding:10px 14px; margin:0 14px; border-radius:10px; font-size:13px; }
+  #hint { display:none; background:#2b3540; color:#cfe0ef; padding:10px 14px; margin:4px 14px; border-radius:10px; font-size:12.5px; line-height:1.45; }
+  #hint .btn { margin-top:8px; padding:5px 12px; font-size:12.5px; }
+  #modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); }
+  #modal.on { display:flex; }
+  .box { width:330px; background:#262523; border:1px solid var(--line); border-radius:14px; padding:20px; }
+  .box h3 { margin:0 0 12px; font-size:16px; font-weight:600; }
+  .box input { width:100%; padding:9px 11px; border-radius:9px; border:1px solid #3a3935; background:#1b1a19; color:var(--fg); font:inherit; outline:none; }
+  .box input:focus { border-color:var(--acc); }
+  .box p { color:var(--mut); font-size:12px; margin:9px 0 0; line-height:1.45; }
+  .act { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+  .cancel { background:#34332f; color:var(--fg); }
+</style>
+</head>
+<body>
+<header><h1>Claude Multi</h1><div class="sub">Несколько аккаунтов Claude Desktop, у каждого свой вход</div></header>
+<div id="warn">Claude Desktop не найден. Установите его, потом откройте Claude Multi снова.</div>
+<div id="hint"><span id="hintText"></span> <button class="btn" id="hintBtn">Открыть настройки</button></div>
+<div id="list"></div>
+<button id="add">+ Добавить аккаунт</button>
+<footer>
+  <label><input type="checkbox" id="shareSettings"><span>Общие MCP и настройки<small>При запуске копии берутся из основного Claude</small></span></label>
+  <label><input type="checkbox" id="shareSessions"><span>Общая история сессий Code<small>Все копии видят одни сессии. Не открывайте одну сессию в двух копиях одновременно</small></span></label>
+</footer>
+<div id="modal"><div class="box">
+  <h3 id="mt"></h3><input id="mi" maxlength="40"><p id="mp"></p>
+  <div class="act"><button class="btn cancel" id="mc">Отмена</button><button class="btn" id="mo">Готово</button></div>
+</div></div>
+<script>
+  const list = document.getElementById('list'), modal = document.getElementById('modal'), mi = document.getElementById('mi');
+  let st = { accounts: [] }, onOk = null;
+
+  function row(a, main) {
+    const r = document.createElement('div'); r.className = 'row';
+    const av = document.createElement('div'); av.className = 'av'; av.style.background = main ? '#d97757' : a.color;
+    av.textContent = main ? '★' : (a.name.trim()[0] || '?').toUpperCase();
+    const nm = document.createElement('div'); nm.className = 'nm';
+    const b = document.createElement('b'); b.textContent = main ? 'Основной' : a.name;
+    const s = document.createElement('span');
+    if (main) s.textContent = 'Обычный Claude, как из меню Пуск';
+    else if (a.waiting) { s.textContent = '● ждёт входа: откройте ссылку из письма'; s.className = 'on'; }
+    else if (a.running) { s.textContent = '● открыт'; s.className = 'on'; }
+    else s.textContent = a.lastOpened ? 'открывался ' + new Date(a.lastOpened).toLocaleDateString('ru') : 'ещё не открывался';
+    nm.append(b, s);
+    const go = document.createElement('button'); go.className = 'btn'; go.textContent = (!main && a.running) ? 'Показать' : 'Открыть';
+    go.onclick = e => { e.stopPropagation(); api.send('open', main ? 'main' : a.id); };
+    r.append(av, nm, go);
+    if (!main) {
+      const m = document.createElement('button'); m.className = 'btn more'; m.textContent = '⋯'; m.title = 'Ещё';
+      m.onclick = e => { e.stopPropagation(); api.send('menu', a.id); };
+      r.append(m);
+      r.oncontextmenu = e => { e.preventDefault(); api.send('menu', a.id); };
+    }
+    r.ondblclick = () => api.send('open', main ? 'main' : a.id);
+    return r;
+  }
+  function render() {
+    list.replaceChildren(row({}, true), ...st.accounts.map(a => row(a, false)));
+    document.getElementById('shareSettings').checked = st.shareSettings;
+    document.getElementById('shareSessions').checked = st.shareSessions;
+    document.getElementById('warn').style.display = st.hasClaude === false ? 'block' : 'none';
+    const hint = document.getElementById('hint'), waiting = st.accounts.some(a => a.waiting);
+    let msg = '';
+    if (st.canRoute && st.linkMode === 'other' && st.accounts.length)
+      msg = 'Ссылки входа из письма сейчас открывает основной Claude. Чтобы вход попадал в нужную копию, в Windows выберите Claude Multi для протокола CLAUDE: Приложения по умолчанию → Выбор стандартных приложений для протоколов.';
+    else if (st.canRoute && st.linkMode === 'none' && waiting)
+      msg = 'Когда откроете ссылку из письма, Windows спросит, чем её открыть. Выберите Claude Multi и отметьте «Всегда использовать это приложение».';
+    hint.style.display = msg ? 'block' : 'none';
+    document.getElementById('hintText').textContent = msg;
+    document.getElementById('hintBtn').style.display = st.linkMode === 'other' ? 'inline-block' : 'none';
+  }
+  function ask(title, value, hint, ok) {
+    document.getElementById('mt').textContent = title; document.getElementById('mp').textContent = hint;
+    mi.value = value; onOk = ok; modal.classList.add('on'); setTimeout(() => { mi.focus(); mi.select(); }, 30);
+  }
+  function close(ok) { modal.classList.remove('on'); const f = onOk; onOk = null; if (ok && f) f(mi.value); }
+  document.getElementById('mo').onclick = () => close(true);
+  document.getElementById('mc').onclick = () => close(false);
+  mi.onkeydown = e => { if (e.key === 'Enter') close(true); if (e.key === 'Escape') close(false); };
+  document.getElementById('add').onclick = () => ask('Новый аккаунт', 'Аккаунт ' + (st.accounts.length + 2),
+    'Откроется отдельная копия Claude с пустым входом. Войдите в нужный аккаунт: ссылка из письма откроется именно в этой копии. Если Windows спросит, чем открыть ссылку, выберите Claude Multi.', v => api.send('add', v));
+  document.getElementById('hintBtn').onclick = () => api.send('link-settings');
+  document.getElementById('shareSettings').onchange = e => api.send('toggle', 'shareSettings', e.target.checked);
+  document.getElementById('shareSessions').onchange = e => api.send('toggle', 'shareSessions', e.target.checked);
+  api.onState(s => { st = s; render(); });
+  api.onAskRename(id => { const a = st.accounts.find(x => x.id === id); if (a) ask('Переименовать', a.name, '', v => api.send('rename', id, v)); });
+  setInterval(() => api.send('refresh'), 5000);
+</script>
+</body>
+</html>
