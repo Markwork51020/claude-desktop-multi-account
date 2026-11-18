@@ -4,8 +4,10 @@ const path = require('path');
 
 // Файлы настроек, которые берём из основного Claude (MCP, пресеты, переключатели инструментов).
 const SHARED_FILES = ['claude_desktop_config.json', 'mcp-user-tool-toggles.json', 'ccd-session-presets.json'];
-// Папки вида <аккаунт>\<организация>, которые сводим в одну общую с основным Claude.
+// Папки вида <аккаунт>\<организация>, которые синхронизируем с общей папкой основного Claude.
 const SHARED_DIRS = ['claude-code-sessions'];
+// Папки, которые целиком делаем общими с основным Claude (связи сессий с их субсессиями).
+const SHARED_FLAT = ['side-session-notes'];
 
 // Самая свежая папка аккаунт\организация в основном Claude — это текущий основной аккаунт.
 function mainOrgDir(mainData, sub) {
@@ -32,13 +34,42 @@ function copyMissing(from, to) {
   }
 }
 
-const hasSessionFiles = dir => fs.readdirSync(dir).some(n => n.startsWith('local_'));
+// Файлы сессий, которые держим одинаковыми: описания сессий и метки удаления.
+const SYNC_RE = /^(local_.*\.json|deleted_[0-9a-f-]+)$/;
 
-// Своя папка сессий профиля -> ставим вместо неё junction на общую папку основного аккаунта,
-// а её файлы переносим туда. live = копия сейчас запущена: тогда трогаем только папки без сессий
-// (сразу после входа), чтобы не потерять то, что копия пишет прямо сейчас.
-function mergeSessions(mainData, profileDir, { live = false } = {}) {
-  const linked = [];
+function copyFile(s, d, st) {
+  const tmp = d + '.cm-tmp';
+  fs.writeFileSync(tmp, fs.readFileSync(s));
+  fs.utimesSync(tmp, st.atime, st.mtime);   // тот же mtime — иначе файл гонялся бы туда-обратно
+  fs.renameSync(tmp, d);
+}
+
+// Две папки сессий -> одинаковые: более новый файл копируем в другую сторону,
+// а по метке удаления deleted_<id> убираем local_<id>.json и там, где его ещё не удалили.
+function syncDirs(a, b) {
+  const list = dir => { const m = new Map(); for (const n of fs.readdirSync(dir)) if (SYNC_RE.test(n)) { try { m.set(n, fs.statSync(path.join(dir, n))); } catch { } } return m; };
+  const A = list(a), B = list(b);
+  let n = 0;
+  for (const name of new Set([...A.keys(), ...B.keys()])) {
+    const x = A.get(name), y = B.get(name);
+    try {
+      if (x && (!y || x.mtimeMs - y.mtimeMs > 1)) { copyFile(path.join(a, name), path.join(b, name), x); n++; }
+      else if (y && (!x || y.mtimeMs - x.mtimeMs > 1)) { copyFile(path.join(b, name), path.join(a, name), y); n++; }
+    } catch { }   // файл заняли или удалили прямо сейчас — в следующий раз
+  }
+  for (const name of new Set([...A.keys(), ...B.keys()])) {
+    if (!name.startsWith('deleted_')) continue;
+    const f = 'local_' + name.slice(8) + '.json';
+    for (const dir of [a, b]) try { fs.unlinkSync(path.join(dir, f)); n++; } catch { }
+  }
+  return n;
+}
+
+// Папки сессий профиля (<аккаунт>\<организация>) держим настоящими папками: Claude отказывается
+// сохранять сессии в junction. Старый junction меняем на папку с копией общих сессий, затем
+// синхронизируем её с общей папкой основного Claude. Работает и при запущенной копии.
+function syncSessions(mainData, profileDir) {
+  let n = 0;
   for (const sub of SHARED_DIRS) {
     const target = mainOrgDir(mainData, sub);
     const base = path.join(profileDir, sub);
@@ -47,37 +78,44 @@ function mergeSessions(mainData, profileDir, { live = false } = {}) {
       const accDir = path.join(base, acc);
       if (!fs.lstatSync(accDir).isDirectory()) continue;
       for (const org of fs.readdirSync(accDir)) {
-        const p = path.join(accDir, org), st = fs.lstatSync(p);
-        if (org.endsWith('.cm-old') || st.isSymbolicLink() || !st.isDirectory()) continue;
-        if (live && hasSessionFiles(p)) continue;
-        const old = p + '.cm-old';
-        try { fs.renameSync(p, old); } catch { continue; }       // папка занята — попробуем в другой раз
-        try { fs.symlinkSync(target, p, 'junction'); } catch (e) { fs.renameSync(old, p); throw e; }
-        copyMissing(old, target);
-        fs.rmSync(old, { recursive: true, force: true });
-        linked.push(p);
+        const p = path.join(accDir, org);
+        if (org.endsWith('.cm-old')) continue;
+        let st = fs.lstatSync(p);
+        if (st.isSymbolicLink()) {
+          fs.unlinkSync(p);                 // снимаем только ссылку, общая папка цела
+          copyMissing(target, p);
+          st = fs.lstatSync(p);
+        }
+        if (st.isDirectory()) n += syncDirs(p, target);
       }
     }
   }
-  return linked;
+  return n;
 }
 
-// Есть ли в профиле своя (ещё не общая) папка сессий.
-function hasUnlinkedSessions(profileDir) {
-  for (const sub of SHARED_DIRS) {
-    const base = path.join(profileDir, sub);
-    try {
-      for (const acc of fs.readdirSync(base)) for (const org of fs.readdirSync(path.join(base, acc))) {
-        const st = fs.lstatSync(path.join(base, acc, org));
-        if (st.isDirectory() && !st.isSymbolicLink() && !org.endsWith('.cm-old')) return true;
-      }
-    } catch { }
+// Папки из SHARED_FLAT профиля -> junction на такие же папки основного Claude (только пока копия закрыта).
+function linkFlat(mainData, profileDir) {
+  for (const sub of SHARED_FLAT) {
+    const target = path.join(mainData, sub), p = path.join(profileDir, sub);
+    fs.mkdirSync(target, { recursive: true });
+    let st = null; try { st = fs.lstatSync(p); } catch { }
+    if (st && st.isSymbolicLink()) continue;
+    if (st) {
+      const old = p + '.cm-old';
+      fs.renameSync(p, old);
+      try { fs.symlinkSync(target, p, 'junction'); } catch (e) { fs.renameSync(old, p); throw e; }
+      copyMissing(old, target);
+      fs.rmSync(old, { recursive: true, force: true });
+    } else fs.symlinkSync(target, p, 'junction');
   }
-  return false;
 }
 
 // Перед удалением профиля снимаем junction'ы, чтобы не задеть данные основного Claude.
 function unlinkShared(profileDir) {
+  for (const sub of SHARED_FLAT) {
+    const p = path.join(profileDir, sub);
+    try { if (fs.lstatSync(p).isSymbolicLink()) fs.unlinkSync(p); } catch { }
+  }
   for (const sub of SHARED_DIRS) {
     const base = path.join(profileDir, sub);
     try {
@@ -105,10 +143,10 @@ function isLoginLink(link) {
   return u.host === 'login' && u.pathname === '/google-auth';
 }
 
-// Чаты Code, открытые сразу в нескольких копиях. Берём процессы Claude Code, которые запустил
+// Чаты Code, открытые сейчас в копиях Claude. Берём процессы Claude Code, которые запустил
 // Claude Desktop (папка claude-code, --resume=<id чата>), и смотрим, из чьей папки данных каждый.
-// Возвращает [{ chat, owners: ['main' | id аккаунта, ...] }] только для чатов с 2+ владельцами.
-function sharedChats(cmdLines, accountIds) {
+// Возвращает [{ chat, owners: ['main' | id аккаунта, ...] }].
+function liveChats(cmdLines, accountIds) {
   const owners = new Map();
   for (const line of cmdLines) {
     const low = line.toLowerCase();
@@ -121,8 +159,11 @@ function sharedChats(cmdLines, accountIds) {
     if (!owners.has(m[1])) owners.set(m[1], new Set());
     owners.get(m[1]).add(owner);
   }
-  return [...owners].filter(([, s]) => s.size > 1).map(([chat, s]) => ({ chat, owners: [...s] }));
+  return [...owners].map(([chat, s]) => ({ chat, owners: [...s] }));
 }
+
+// Те же чаты, но только открытые сразу в 2+ копиях.
+const sharedChats = (cmdLines, accountIds) => liveChats(cmdLines, accountIds).filter(d => d.owners.length > 1);
 
 // Названия чатов по их id из описаний сессий основного Claude (общих для всех копий).
 function chatTitles(mainData, chats) {
@@ -144,4 +185,15 @@ function chatTitles(mainData, chats) {
   return titles;
 }
 
-module.exports = { mainOrgDir, mergeSessions, hasUnlinkedSessions, unlinkShared, syncSettings, isLoginLink, sharedChats, chatTitles, SHARED_FILES, SHARED_DIRS };
+// Последний замер лимитов, который Claude пишет в plan-usage-history.json:
+// fh — % пятичасового лимита, sd — % недельного, t — время замера.
+function usage(dataDir) {
+  try {
+    const j = JSON.parse(fs.readFileSync(path.join(dataDir, 'plan-usage-history.json'), 'utf8'));
+    const s = j.samples && j.samples[j.samples.length - 1];
+    if (s && s.u) return { t: s.t, fh: s.u.fh, sd: s.u.sd };
+  } catch { }
+  return null;
+}
+
+module.exports = { usage, mainOrgDir, syncSessions, syncDirs, linkFlat, liveChats, unlinkShared, syncSettings, isLoginLink, sharedChats, chatTitles, SHARED_FILES, SHARED_DIRS, SHARED_FLAT };

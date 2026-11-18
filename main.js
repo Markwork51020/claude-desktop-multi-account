@@ -87,6 +87,20 @@ function dupChats(procs) {
   return found.map(d => ({ title: titles[d.chat] || T('untitled'), where: d.owners.map(nameOf) }));
 }
 
+// Все чаты Code, открытые сейчас, и в каких окнах — чтобы из одного окна видеть работу в другом.
+function liveSessions(procs) {
+  const found = lib.liveChats(procs.split(/\r?\n/), state.accounts.map(a => a.id));
+  if (!found.length) return [];
+  const titles = lib.chatTitles(MAIN_DATA, found.map(d => d.chat));
+  const who = o => {
+    if (o === 'main') return { name: T('main'), color: '#d97757' };
+    const a = state.accounts.find(x => x.id === o) || {};
+    return { name: a.name || o, color: a.color || '#8a8f98' };
+  };
+  return found.map(d => ({ title: titles[d.chat] || T('untitled'), where: d.owners.map(who) }))
+    .sort((x, y) => x.where[0].name.localeCompare(y.where[0].name) || x.title.localeCompare(y.title));
+}
+
 function noClaude() {
   dialog.showErrorBox(T('noClaudeTitle'), T('noClaudeText'));
 }
@@ -102,11 +116,13 @@ function launch(id) {
     if (!a.legacy) {
       fs.mkdirSync(dirOf(a), { recursive: true });
       try { if (state.shareSettings) lib.syncSettings(MAIN_DATA, dirOf(a)); } catch (e) { console.error(e); }
-      try { if (state.shareSessions) lib.mergeSessions(MAIN_DATA, dirOf(a)); } catch (e) { console.error(e); }
+      try { if (state.shareSessions) lib.syncSessions(MAIN_DATA, dirOf(a)); } catch (e) { console.error(e); }
+      try { if (state.shareSessions) lib.linkFlat(MAIN_DATA, dirOf(a)); } catch (e) { console.error(e); }
     }
   }
   runClaude(['--user-data-dir=' + dirOf(a)]);
   a.lastOpened = Date.now(); save(); sendState();
+  startSync();
   return true;
 }
 
@@ -127,7 +143,7 @@ function handleLink(link) {
   if (isRunning(a, runningDirs())) send();
   else { launch(a.id); setTimeout(send, COLD_START_WAIT); }
   a.needsLogin = false; a.historyUntil = Date.now() + HISTORY_WAIT; save(); sendState();
-  watchHistory();
+  startSync();
 }
 const linkArg = argv => argv.find(x => /^claude:/i.test(x));
 
@@ -158,40 +174,50 @@ async function checkLinkMode() {
   if (mode !== linkMode) { linkMode = mode; sendState(); }
 }
 
-// ---- История сессий сразу после входа ----
-// После входа у копии появляется своя папка сессий; как только она есть — меняем её на общую.
-let historyTimer = null;
-function watchHistory() {
-  if (historyTimer) return;
-  historyTimer = setInterval(() => {
-    const now = Date.now(), list = state.accounts.filter(a => a.historyUntil > now);
-    if (state.shareSessions) for (const a of list) {
-      try {
-        if (lib.mergeSessions(MAIN_DATA, dirOf(a), { live: true }).length) { delete a.historyUntil; save(); }
-      } catch (e) { console.error(e); }
-    }
-    if (!state.accounts.some(a => a.historyUntil > now)) {
-      clearInterval(historyTimer); historyTimer = null;
-      if (!win) app.quit();
-    }
-  }, 5000);
+// ---- Общие сессии ----
+// Каждая копия сохраняет сессии в свою папку, а лаунчер, пока открыта хоть одна копия,
+// синхронизирует эти папки с общей папкой основного Claude. Сессии из других окон копия
+// увидит после перезапуска. Лаунчер работает, пока открыта хоть одна копия.
+const SYNC_EVERY = 5e3, RUNNING_EVERY = 30e3;
+let syncTimer = null, anyRunning = true, runningCheckedAt = 0;
+function syncAll() {
+  load();
+  if (state.shareSessions) for (const a of state.accounts) {
+    if (a.legacy) continue;
+    try { lib.syncSessions(MAIN_DATA, dirOf(a)); } catch (e) { console.error(e); }
+  }
 }
-const busy = () => state.accounts.some(a => a.historyUntil > Date.now());
+function startSync() {
+  if (syncTimer) return;
+  anyRunning = true; runningCheckedAt = Date.now();
+  syncTimer = setInterval(() => {
+    syncAll();
+    const now = Date.now();
+    if (now - runningCheckedAt >= RUNNING_EVERY) {
+      runningCheckedAt = now;
+      const procs = runningDirs();
+      anyRunning = state.accounts.some(a => isRunning(a, procs));
+    }
+    if (!busy()) { clearInterval(syncTimer); syncTimer = null; syncAll(); if (!win) app.quit(); }
+  }, SYNC_EVERY);
+}
+const busy = () => anyRunning || state.accounts.some(a => a.historyUntil > Date.now());
 
 function sendState() {
   if (!win || win.isDestroyed()) return;
   load();   // список могли изменить снаружи — всегда берём с диска
   const procs = runningDirs();
   win.webContents.send('state', {
-    accounts: state.accounts.map(a => ({ ...a, running: isRunning(a, procs), waiting: a === waitingAccount() })),
+    accounts: state.accounts.map(a => ({ ...a, running: isRunning(a, procs), waiting: a === waitingAccount(), usage: lib.usage(dirOf(a)) })),
+    mainUsage: lib.usage(MAIN_DATA),
     shareSettings: state.shareSettings, shareSessions: state.shareSessions,
-    hasClaude: hasClaude(), linkMode, canRoute: app.isPackaged, dupChats: dupChats(procs)
+    hasClaude: hasClaude(), linkMode, canRoute: app.isPackaged, dupChats: dupChats(procs), live: liveSessions(procs)
   });
 }
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 420, height: 640, minWidth: 360, minHeight: 440, title: 'Claude Multi', backgroundColor: '#1f1e1d',
+    width: 600, height: 660, minWidth: 520, minHeight: 440, title: 'Claude Multi', backgroundColor: '#1f1e1d',
     icon: path.join(__dirname, 'icon.ico'), autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js') }
   });
@@ -270,8 +296,8 @@ else {
   app.whenReady().then(() => {
     migrate(); load();
     registerLinks();
-    if (busy()) watchHistory();
-    if (headless(process.argv)) { setTimeout(() => { if (!win && !busy()) app.quit(); }, 2000); return; }
+    startSync();   // проверит, открыты ли копии; если нет — остановится
+    if (headless(process.argv)) return;
     createWindow();
   });
   app.on('window-all-closed', () => { if (!busy()) app.quit(); });

@@ -8,7 +8,7 @@ const STRINGS = {
     shareSessions: 'Shared Code session history', shareSessionsHint: 'All copies see the same sessions. Do not open one session in two copies at once',
     cancel: 'Cancel', done: 'Done', main: 'Main', mainHint: 'Your regular Claude, as from the Start menu',
     waiting: '● waiting for login: open the link from the email', running: '● open',
-    lastOpened: 'last opened {date}', neverOpened: 'not opened yet', show: 'Show', open: 'Open', more: 'More',
+    lastOpened: 'last opened {date}', neverOpened: 'not opened yet', show: 'Show', open: 'Open', more: 'More', lastLogin: 'Last login {date}', week: 'Week', fiveHour: '5 h', limitsAt: 'as of {date}', noLimits: 'no limits data yet', showLimits: 'Show limits', hideLimits: 'Hide limits',
     hintOther: 'Your main Claude currently opens email sign-in links. To send them to the right copy, choose Claude Multi for the CLAUDE protocol in Windows: Settings → Default apps → Choose default apps by protocol (link type).',
     hintNone: 'When you open the link from the email, Windows will ask which app to use. Choose Claude Multi and tick "Always use this app".',
     newAccount: 'New account', accountName: 'Account {n}',
@@ -23,6 +23,7 @@ const STRINGS = {
     dupItem: '"{title}": {where}',
     dupText: 'Each window keeps its own copy of the chat and the history will split. Fully quit one of these copies (Claude icon in the tray, then Quit) and open it again. Until then, write in that chat from one window only.',
     untitled: 'Untitled chat',
+    liveTitle: 'Open now', liveNone: 'No Claude Code chats are open',
   },
   ru: {
     locale: 'ru', subtitle: 'Несколько аккаунтов Claude Desktop, у каждого свой вход',
@@ -32,7 +33,7 @@ const STRINGS = {
     shareSessions: 'Общая история сессий Code', shareSessionsHint: 'Все копии видят одни сессии. Не открывайте одну сессию в двух копиях одновременно',
     cancel: 'Отмена', done: 'Готово', main: 'Основной', mainHint: 'Обычный Claude, как из меню Пуск',
     waiting: '● ждёт входа: откройте ссылку из письма', running: '● открыт',
-    lastOpened: 'открывался {date}', neverOpened: 'ещё не открывался', show: 'Показать', open: 'Открыть', more: 'Ещё',
+    lastOpened: 'открывался {date}', neverOpened: 'ещё не открывался', show: 'Показать', open: 'Открыть', more: 'Ещё', lastLogin: 'Последний вход {date}', week: 'Неделя', fiveHour: '5 ч', limitsAt: 'на {date}', noLimits: 'лимитов ещё нет', showLimits: 'Показать лимиты', hideLimits: 'Скрыть лимиты',
     hintOther: 'Ссылки входа из письма сейчас открывает основной Claude. Чтобы вход попадал в нужную копию, в Windows выберите Claude Multi для протокола CLAUDE: Приложения по умолчанию → Выбор стандартных приложений для протоколов.',
     hintNone: 'Когда откроете ссылку из письма, Windows спросит, чем её открыть. Выберите Claude Multi и отметьте «Всегда использовать это приложение».',
     newAccount: 'Новый аккаунт', accountName: 'Аккаунт {n}',
@@ -47,6 +48,7 @@ const STRINGS = {
     dupItem: '«{title}»: {where}',
     dupText: 'Каждое окно держит свою версию чата, и история разойдётся. Полностью выйдите из одной из этих копий (значок Claude в трее → Выход) и откройте её снова. До этого пишите в этот чат только из одного окна.',
     untitled: 'Чат без названия',
+    liveTitle: 'Сейчас открыты', liveNone: 'Открытых чатов Claude Code нет',
   },
   zh: {
     locale: 'zh-CN', subtitle: '同时运行多个 Claude Desktop 账号，各自独立登录',
@@ -56,7 +58,7 @@ const STRINGS = {
     shareSessions: '共享 Code 会话历史', shareSessionsHint: '所有副本看到相同的会话。请勿在两个副本中同时打开同一会话',
     cancel: '取消', done: '完成', main: '主账号', mainHint: '普通的 Claude，与从开始菜单打开的相同',
     waiting: '● 等待登录：请打开邮件中的链接', running: '● 已打开',
-    lastOpened: '上次打开：{date}', neverOpened: '尚未打开', show: '显示', open: '打开', more: '更多',
+    lastOpened: '上次打开：{date}', neverOpened: '尚未打开', show: '显示', open: '打开', more: '更多', lastLogin: '上次登录：{date}', week: '本周', fiveHour: '5 小时', limitsAt: '截至 {date}', noLimits: '暂无额度数据', showLimits: '显示额度', hideLimits: '隐藏额度',
     hintOther: '邮件登录链接目前由主 Claude 打开。要让链接进入正确的副本，请在 Windows 中为 CLAUDE 协议选择 Claude Multi：设置 → 默认应用 → 按协议指定默认应用。',
     hintNone: '打开邮件中的链接时，Windows 会询问用哪个应用打开。请选择 Claude Multi 并勾选“始终使用此应用”。',
     newAccount: '新账号', accountName: '账号 {n}',
@@ -71,6 +73,7 @@ const STRINGS = {
     dupItem: '“{title}”：{where}',
     dupText: '每个窗口都保留自己的对话版本，历史会分叉。请完全退出其中一个副本（托盘中的 Claude 图标 → 退出），然后重新打开。在此之前，只在一个窗口中继续这个对话。',
     untitled: '未命名对话',
+    liveTitle: '正在打开', liveNone: '没有打开的 Claude Code 对话',
   },
 };
 
